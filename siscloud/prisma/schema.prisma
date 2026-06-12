@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── School (Tenant) ─────────────────────────────────────
+
+model School {
+  id             String   @id @default(uuid())
+  schoolName     String
+  schoolId       String   @unique
+  contactEmail   String
+  plan           Plan     @default(FREE)
+  storageLimitGb Int      @default(50)
+  storageUsedGb  Float    @default(0)
+  isActive       Boolean  @default(true)
+  lastSyncAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  users       SchoolUser[]
+  syncJournal SyncJournal[]
+  apiKeys     ApiKey[]
+
+  @@map("schools")
+}
+
+enum Plan {
+  FREE
+  BASIC
+  PREMIUM
+  ENTERPRISE
+}
+
+// ─── School Users (mirror dari App Server) ────────────────
+
+model SchoolUser {
+  id         String   @id @default(uuid())
+  schoolId   String
+  username   String
+  quotaBytes BigInt   @default(5368709120)
+  usedBytes  BigInt   @default(0)
+  createdAt  DateTime @default(now())
+
+  school     School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  syncJournal SyncJournal[]
+
+  @@unique([schoolId, username])
+  @@map("school_users")
+}
+
+// ─── Sync Journal (track perubahan per file) ──────────────
+
+model SyncJournal {
+  id        String   @id @default(uuid())
+  schoolId  String
+  userId    String
+  filePath  String
+  operation SyncOp
+  fileSize  BigInt?
+  fileHash  String?
+  syncedAt  DateTime @default(now())
+
+  school School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user   SchoolUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum SyncOp {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+// ─── API Keys (untuk autentikasi App Server) ──────────────
+
+model ApiKey {
+  id         String   @id @default(uuid())
+  schoolId   String
+  keyHash    String
+  name       String
+  isActive   Boolean  @default(true)
+  lastUsedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, name])
+  @@map("api_keys")
+}
+
+// ─── File Versions (Fase 4) ──────────────────────────────
+
+model FileVersion {
+  id        String   @id @default(uuid())
+  schoolId  String
+  userId    String
+  filePath  String
+  version   Int
+  fileSize  BigInt
+  fileHash  String
+  storageKey String  // S3/MinIO object key
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, userId, filePath])
+  @@map("file_versions")
+}
+
+// ─── Subscription Plans (Fase 4) ─────────────────────────
+
+model Subscription {
+  id          String   @id @default(uuid())
+  schoolId    String   @unique
+  plan        Plan     @default(FREE)
+  pricePerMonth Int    @default(0)
+  storageGb   Int      @default(50)
+  maxSchools  Int      @default(1)
+  isActive    Boolean  @default(true)
+  startedAt   DateTime @default(now())
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
