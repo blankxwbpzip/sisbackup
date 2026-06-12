@@ -1,0 +1,162 @@
+<Window x:Class="SisbackupServer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Sisbackup Server" Height="600" Width="800"
+        MinHeight="500" MinWidth="700"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="0" Background="#F8FAFC" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Status Indicator -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Ellipse x:Name="StatusDot" Width="12" Height="12" Fill="Gray"
+                             Margin="0,0,8,0" VerticalAlignment="Center" />
+                    <StackPanel>
+                        <TextBlock x:Name="StatusText" Text="Server Stopped"
+                                   FontSize="16" FontWeight="SemiBold" />
+                        <TextBlock x:Name="UptimeText" Text=""
+                                   FontSize="12" Foreground="#64748B" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Server URL -->
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock x:Name="ServerUrlText" Text="http://localhost:3001"
+                               FontSize="14" FontFamily="Consolas" Foreground="#2563EB"
+                               HorizontalAlignment="Center" />
+                    <TextBlock x:Name="LanUrlText" Text="LAN: http://192.168.1.100:3001"
+                               FontSize="11" Foreground="#94A3B8"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Action Buttons -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button x:Name="BtnStart" Content="▶ Start" Click="BtnStart_Click"
+                            Style="{StaticResource PrimaryButton}" Margin="0,0,6,0" Width="80" />
+                    <Button x:Name="BtnStop" Content="⏹ Stop" Click="BtnStop_Click"
+                            Background="#EF4444" Foreground="White" Padding="16,8"
+                            BorderThickness="0" Cursor="Hand" Margin="0,0,6,0" Width="80" />
+                    <Button x:Name="BtnRestart" Content="↻ Restart" Click="BtnRestart_Click"
+                            Background="#F59E0B" Foreground="White" Padding="16,8"
+                            BorderThickness="0" Cursor="Hand" Width="80" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Quick Stats -->
+        <WrapPanel Grid.Row="1" Margin="0,0,0,12">
+            <Border Background="White" CornerRadius="8" Padding="16" Margin="0,0,10,6"
+                    BorderBrush="#E2E8F0" BorderThickness="1" MinWidth="130">
+                <StackPanel>
+                    <TextBlock Text="👥 Pengguna" FontSize="12" Foreground="#64748B" />
+                    <TextBlock x:Name="StatUsers" Text="..." FontSize="18" FontWeight="Bold" />
+                </StackPanel>
+            </Border>
+            <Border Background="White" CornerRadius="8" Padding="16" Margin="0,0,10,6"
+                    BorderBrush="#E2E8F0" BorderThickness="1" MinWidth="130">
+                <StackPanel>
+                    <TextBlock Text="🟢 Sync Aktif" FontSize="12" Foreground="#64748B" />
+                    <TextBlock x:Name="StatActiveSyncs" Text="..." FontSize="18" FontWeight="Bold" />
+                </StackPanel>
+            </Border>
+            <Border Background="White" CornerRadius="8" Padding="16" Margin="0,0,10,6"
+                    BorderBrush="#E2E8F0" BorderThickness="1" MinWidth="130">
+                <StackPanel>
+                    <TextBlock Text="💾 Disk" FontSize="12" Foreground="#64748B" />
+                    <TextBlock x:Name="StatDisk" Text="..." FontSize="18" FontWeight="Bold" />
+                </StackPanel>
+            </Border>
+            <Border Background="White" CornerRadius="8" Padding="16" Margin="0,0,10,6"
+                    BorderBrush="#E2E8F0" BorderThickness="1" MinWidth="130">
+                <StackPanel>
+                    <TextBlock Text="📋 Queue" FontSize="12" Foreground="#64748B" />
+                    <TextBlock x:Name="StatQueue" Text="..." FontSize="18" FontWeight="Bold" />
+                </StackPanel>
+            </Border>
+        </WrapPanel>
+
+        <!-- Tab Control: Config + Log -->
+        <TabControl Grid.Row="2" Margin="0,0,0,12">
+            <TabItem Header="⚙️ Konfigurasi">
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Storage Path:" VerticalAlignment="Center" FontSize="13" />
+                        <TextBox x:Name="TxtStoragePath" Grid.Column="1"
+                                 Text="D:\BackupSekolah" FontSize="13"
+                                 Padding="8,6" Margin="8,0" />
+                        <Button Grid.Column="2" Content="Browse"
+                                Click="BtnBrowseStorage_Click" Padding="12,6" />
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="100" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Port:" VerticalAlignment="Center" FontSize="13" />
+                        <TextBox x:Name="TxtPort" Grid.Column="1"
+                                 Text="3001" FontSize="13" Padding="8,6" />
+                    </Grid>
+
+                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                        <CheckBox x:Name="ChkAutoStart" Content="Start server saat Windows boot"
+                                  FontSize="13" Margin="0,4" IsChecked="True" />
+                        <CheckBox x:Name="ChkFirewall" Content="Allow port di Windows Firewall (perlu admin)"
+                                  FontSize="13" Margin="0,4" IsChecked="True" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="3" Orientation="Horizontal">
+                        <Button Content="💾 Simpan Konfigurasi" Click="BtnSaveConfig_Click"
+                                Style="{StaticResource PrimaryButton}" Margin="0,0,10,0" />
+                        <Button Content="🌐 Buka Web Admin" Click="BtnOpenWebAdmin_Click"
+                                Background="#10B981" Foreground="White" Padding="16,8"
+                                BorderThickness="0" Cursor="Hand" />
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="📋 Log Aktivitas">
+                <ListBox x:Name="LstLogs" FontFamily="Consolas" FontSize="12"
+                         Background="#1E293B" Foreground="#E2E8F0"
+                         BorderThickness="0" Margin="0" />
+            </TabItem>
+        </TabControl>
+
+        <!-- Footer -->
+        <StatusBar Grid.Row="3">
+            <StatusBarItem>
+                <TextBlock x:Name="TxtFooter" Text="Sisbackup Server v2.6.0 — Ready"
+                           FontSize="11" Foreground="#64748B" />
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

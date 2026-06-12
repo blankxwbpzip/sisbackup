@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    WiX Toolset v4 Installer for Sisbackup Desktop App Server
+    Build: wix build -arch x64 -out SisbackupServer.msi Installer\SisbackupServer.wxs
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+    <Package Name="Sisbackup Server"
+             Manufacturer="Sisbackup"
+             Version="2.6.0"
+             UpgradeCode="A1B2C3D4-E5F6-7890-ABCD-EF1234567890"
+             Scope="perMachine"
+             Language="1033">
+
+        <MajorUpgrade DowngradeErrorMessage="Versi lebih baru sudah terinstall." />
+
+        <!-- Windows 10 22H2+ check -->
+        <Launch Condition="VersionNT &gt;= 603">
+            Windows 10 22H2 (Build 19045) atau lebih tinggi diperlukan.
+        </Launch>
+
+        <MediaTemplate EmbedCab="yes" />
+
+        <!-- UI: simplified WixUI -->
+        <UIRef Id="WixUI_InstallDir" />
+        <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+        <Feature Id="Main" Title="Sisbackup Server" Level="1">
+            <ComponentGroupRef Id="AppComponents" />
+            <ComponentGroupRef Id="RegistryComponents" />
+        </Feature>
+
+        <!-- Install folder -->
+        <StandardDirectory Id="ProgramFiles64Folder">
+            <Directory Id="SisbackupFolder" Name="Sisbackup Server">
+                <Directory Id="INSTALLFOLDER" Name="Server" />
+            </Directory>
+        </StandardDirectory>
+
+        <!-- Start Menu Shortcut -->
+        <StandardDirectory Id="ProgramMenuFolder">
+            <Directory Id="ShortcutFolder" Name="Sisbackup" />
+        </StandardDirectory>
+
+        <!-- Desktop Shortcut -->
+        <StandardDirectory Id="DesktopFolder" />
+
+        <!-- Component Group: App Files -->
+        <ComponentGroup Id="AppComponents" Directory="INSTALLFOLDER">
+            <Files Include="..\SisbackupServer\bin\Release\net8.0-windows\win-x64\publish\**">
+                <Exclude Files="*.pdb" />
+            </Files>
+
+            <!-- Shortcuts -->
+            <Component>
+                <File Id="MainExe" Source="SisbackupServer.exe" KeyPath="yes" />
+                <Shortcut Id="StartMenuShortcut"
+                          Directory="ShortcutFolder"
+                          Name="Sisbackup Server"
+                          WorkingDirectory="INSTALLFOLDER"
+                          Advertise="yes" />
+                <Shortcut Id="DesktopShortcut"
+                          Directory="DesktopFolder"
+                          Name="Sisbackup Server"
+                          WorkingDirectory="INSTALLFOLDER"
+                          Advertise="yes" />
+            </Component>
+        </ComponentGroup>
+
+        <!-- Component Group: Registry (auto-start, config) -->
+        <ComponentGroup Id="RegistryComponents" Directory="INSTALLFOLDER">
+            <Component Id="RegistrySettings">
+                <RegistryKey Root="HKLM"
+                             Key="Software\Sisbackup\Server">
+                    <RegistryValue Name="InstallPath"
+                                   Value="[INSTALLFOLDER]"
+                                   Type="string" />
+                    <RegistryValue Name="Version"
+                                   Value="2.6.0"
+                                   Type="string" />
+                </RegistryKey>
+            </Component>
+
+            <!-- Auto-start with Windows -->
+            <Component Id="AutoStartRegistry">
+                <RegistryKey Root="HKLM"
+                             Key="Software\Microsoft\Windows\CurrentVersion\Run">
+                    <RegistryValue Name="SisbackupServer"
+                                   Value="[INSTALLFOLDER]SisbackupServer.exe"
+                                   Type="string" />
+                </RegistryKey>
+                <Condition>AUTOSTART=1</Condition>
+            </Component>
+        </ComponentGroup>
+
+        <!-- UI Properties -->
+        <Property Id="AUTOSTART" Value="1" />
+    </Package>
+</Wix>
