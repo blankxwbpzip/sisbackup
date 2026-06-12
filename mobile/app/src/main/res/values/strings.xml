@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sisbackup</string>
+    <string name="login_title">Masuk ke Sisbackup</string>
+    <string name="username_hint">Username</string>
+    <string name="password_hint">Password</string>
+    <string name="login_button">Masuk</string>
+    <string name="biometric_login">Login dengan Biometric</string>
+    <string name="file_browser_title">File Backup</string>
+    <string name="dashboard_title">Dashboard</string>
+</resources>
