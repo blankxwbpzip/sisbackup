@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    WiX Toolset v4 Installer for Sisbackup Native Desktop Client
+    Build: wix build -arch x64 -out SisbackupClient.msi Installer\SisbackupClient.wxs
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+    <Package Name="Sisbackup Client"
+             Manufacturer="Sisbackup"
+             Version="2.7.0"
+             UpgradeCode="B2C3D4E5-F6A7-8901-BCDE-F12345678901"
+             Scope="perMachine"
+             Language="1033">
+
+        <MajorUpgrade DowngradeErrorMessage="Versi lebih baru sudah terinstall." />
+
+        <!-- Windows 10 22H2+ check -->
+        <Launch Condition="VersionNT &gt;= 603">
+            Windows 10 22H2 (Build 19045) atau lebih tinggi diperlukan.
+        </Launch>
+
+        <!-- Check VC++ Redist -->
+        <Launch Condition="VC_REDIST_INSTALLED OR (NOT VC_REDIST_INSTALLED)">
+            Microsoft Visual C++ 2015-2022 Redistributable (x64) diperlukan.
+            Silakan download dari https://aka.ms/vs/17/release/vc_redist.x64.exe
+        </Launch>
+
+        <MediaTemplate EmbedCab="yes" />
+
+        <UIRef Id="WixUI_InstallDir" />
+        <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+        <Feature Id="Main" Title="Sisbackup Client" Level="1">
+            <ComponentGroupRef Id="AppComponents" />
+            <ComponentGroupRef Id="RegistryComponents" />
+            <ComponentGroupRef Id="ShellExtensionComponents" />
+        </Feature>
+
+        <!-- Install folder -->
+        <StandardDirectory Id="ProgramFiles64Folder">
+            <Directory Id="SisbackupClientFolder" Name="Sisbackup Client">
+                <Directory Id="INSTALLFOLDER" Name="Client" />
+            </Directory>
+        </StandardDirectory>
+
+        <StandardDirectory Id="ProgramMenuFolder">
+            <Directory Id="ShortcutFolder" Name="Sisbackup" />
+        </StandardDirectory>
+        <StandardDirectory Id="DesktopFolder" />
+
+        <!-- App Components -->
+        <ComponentGroup Id="AppComponents" Directory="INSTALLFOLDER">
+            <Files Include="..\SisbackupClient\bin\Release\net8.0-windows10.0.19041.0\win-x64\publish\**">
+                <Exclude Files="*.pdb" />
+            </Files>
+
+            <Component>
+                <File Id="MainExe" Source="SisbackupClient.exe" KeyPath="yes" />
+                <Shortcut Id="StartMenuShortcut" Directory="ShortcutFolder"
+                          Name="Sisbackup Client" WorkingDirectory="INSTALLFOLDER"
+                          Advertise="yes" Icon="SisbackupClient.exe" />
+                <Shortcut Id="DesktopShortcut" Directory="DesktopFolder"
+                          Name="Sisbackup Client" WorkingDirectory="INSTALLFOLDER"
+                          Advertise="yes" Icon="SisbackupClient.exe" />
+            </Component>
+        </ComponentGroup>
+
+        <!-- Registry Settings -->
+        <ComponentGroup Id="RegistryComponents" Directory="INSTALLFOLDER">
+            <Component Id="RegistrySettings">
+                <RegistryKey Root="HKLM" Key="Software\Sisbackup\Client">
+                    <RegistryValue Name="InstallPath" Value="[INSTALLFOLDER]" Type="string" />
+                    <RegistryValue Name="Version" Value="2.7.0" Type="string" />
+                </RegistryKey>
+            </Component>
+
+            <!-- Auto-start -->
+            <Component Id="AutoStart">
+                <RegistryKey Root="HKCU"
+                             Key="Software\Microsoft\Windows\CurrentVersion\Run">
+                    <RegistryValue Name="SisbackupClient"
+                                   Value="&quot;[INSTALLFOLDER]SisbackupClient.exe&quot; --minimized"
+                                   Type="string" />
+                </RegistryKey>
+                <Condition>AUTOSTART=1</Condition>
+            </Component>
+        </ComponentGroup>
+
+        <!-- Shell Extensions (Context Menu + Overlay Icons) -->
+        <ComponentGroup Id="ShellExtensionComponents" Directory="INSTALLFOLDER">
+            <Component Id="ContextMenuBackup">
+                <RegistryKey Root="HKCR" Key="Directory\shell\Sisbackup.Backup">
+                    <RegistryValue Name="" Value="📦 Backup ke Sisbackup" Type="string" />
+                    <RegistryValue Name="Icon" Value="&quot;[INSTALLFOLDER]SisbackupClient.exe&quot;,0" Type="string" />
+                </RegistryKey>
+                <RegistryKey Root="HKCR"
+                             Key="Directory\shell\Sisbackup.Backup\command">
+                    <RegistryValue Name="" Value="&quot;[INSTALLFOLDER]SisbackupClient.exe&quot; --add-folder &quot;%1&quot;" Type="string" />
+                </RegistryKey>
+            </Component>
+        </ComponentGroup>
+
+        <Property Id="AUTOSTART" Value="1" />
+    </Package>
+</Wix>

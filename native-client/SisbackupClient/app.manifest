@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  <assemblyIdentity version="1.0.0.0" name="SisbackupClient"/>
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/> <!-- Win10 -->
+    </application>
+  </compatibility>
+
+  <!-- Declare COM server for shell extensions -->
+  <file name="SisbackupClient.ShellExtensions.dll">
+    <comClass
+      clsid="{A1B2C3D4-E5F6-7890-ABCD-EF1234567891}"
+      threadingModel="Apartment"
+      progid="Sisbackup.ContextMenuHandler" />
+  </file>
+</assembly>
