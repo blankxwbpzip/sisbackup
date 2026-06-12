@@ -4,6 +4,44 @@
 
 Sisbackup adalah sistem backup data untuk sekolah yang berjalan di jaringan lokal (offline) dengan opsi sinkronisasi ke cloud. Dirancang agar guru dan operator sekolah dapat mem-backup data penting dengan mudah, aman, dan otomatis.
 
+---
+
+## 📋 System Requirements
+
+### Minimum (Windows)
+
+| Komponen | App Server | Desktop Client |
+|----------|-----------|----------------|
+| **OS** | Windows 10 22H2 (Build 19045) atau lebih tinggi | Windows 10 22H2 (Build 19045) atau lebih tinggi |
+| **OS (Server)** | Windows Server 2019 / 2022 | — |
+| **RAM** | 2 GB (4 GB recommended) | 512 MB idle / 1 GB saat sync |
+| **Disk** | 500 MB app + storage backup | 150 MB app + rclone (~40 MB) |
+| **CPU** | x64, 1.5 GHz dual-core | x64, 1 GHz |
+
+### Required Dependencies (Windows)
+
+Dependency berikut **di-bundle otomatis** dalam installer `.msi` / `.exe` — Anda tidak perlu install manual:
+
+| Dependency | Diperlukan Oleh | Size | Keterangan |
+|------------|----------------|------|------------|
+| **Microsoft Visual C++ 2015-2022 Redistributable (x64)** | rclone, native Node.js modules, WinFsp | ~14 MB | Wajib — di-bundle di installer |
+| **.NET 8 Desktop Runtime (x64)** | Desktop App Server (Fase 6), Native Client (Fase 7) | ~55 MB | Di-bundle (self-contained) atau auto-download |
+| **Node.js 20 LTS** | App Server | ~30 MB | Hanya untuk mode development; di-bundle di Fase 6 installer |
+| **WinFsp** | Fitur mount drive (opsional) | ~5 MB | Opsional — untuk mounting cloud storage sebagai drive letter |
+
+> **Catatan**: Windows 10 versi di bawah Build 19045 (termasuk Windows 10 1507-19044, Windows 8.1, Windows 7) **tidak didukung**. Minimal Windows 10 22H2 atau Windows 11. Windows 10 LTSC 2021 (Build 19044) dapat berfungsi tetapi tidak diuji secara resmi.
+
+### Linux (App Server)
+
+| Komponen | Minimum |
+|----------|---------|
+| **OS** | Ubuntu Server 22.04 / 24.04 LTS, Debian 12+ |
+| **RAM** | 1 GB (2 GB recommended) |
+| **Node.js** | v20 LTS |
+| **Disk** | 500 MB app + storage backup |
+
+---
+
 ## 🏗️ Arsitektur
 
 ```
@@ -15,7 +53,7 @@ App Server (On-Premise)  ←→  Client Desktop (Guru)
   Storage                        └─ OneDrive (personal)
   (NAS/Local)
      │
-     │  (Fase 2: Online)
+     │  (Fase 3: Online)
      ▼
   Siscloud (Cloud)
 ```
@@ -25,11 +63,22 @@ App Server (On-Premise)  ←→  Client Desktop (Guru)
 ```
 sisbackup/
 ├── server/           # App Server (Node.js + Fastify + React admin)
-│   ├── src/          # Backend: API, Auth, WebSocket, Database
-│   └── web/          # Frontend: React + Vite admin dashboard
+│   ├── src/          # Backend: API, Auth, WebSocket, Database, OAuth
+│   │   ├── routes/   # API routes (auth, users, sync, config, stats, oauth, rclone)
+│   │   ├── oauth.js  # Google & Microsoft OAuth handler
+│   │   ├── cloud-bridge.js  # Sync engine ke Siscloud
+│   │   ├── versioning.js    # File versioning & recovery
+│   │   ├── policy-engine.js # Backup policy & retention
+│   │   ├── ldap.js   # Active Directory / LDAP integration
+│   │   └── saas.js   # Subscription management
+│   └── web/          # React + Vite admin dashboard
 ├── client/           # Desktop Client (Tauri v2 + React)
-│   ├── src/          # React UI components
-│   └── src-tauri/    # Rust backend, rclone integration, system tray
+│   ├── src/          # React UI (Fase 1-2)
+│   └── src-tauri/    # Rust backend, rclone, system tray
+├── siscloud/         # Cloud server (Next.js + PostgreSQL + Docker)
+│   ├── src/app/api/  # Sync API, health check
+│   ├── src/lib/      # Auth, storage (S3/MinIO), Prisma
+│   └── prisma/       # Database schema
 ├── docs/             # Dokumentasi instalasi & penggunaan
 └── prd.md            # Product Requirements Document
 ```
@@ -38,11 +87,13 @@ sisbackup/
 
 ### Prasyarat
 
-- **App Server**: Node.js 20+, Windows 10+/Windows Server 2019+ atau Ubuntu 22.04+
-- **Client**: Windows 10 22H2+ atau Windows 11
+- **Windows 10 22H2+** atau Windows 11 (client & app server)
+- **Linux Ubuntu 22.04+** (opsional untuk app server)
+- **Node.js 20+** (untuk development / App Server Fase 1-4)
+- **Rust** (untuk build Tauri client)
 - **Storage**: Minimal 10GB ruang kosong untuk testing
 
-### App Server
+### App Server (Fase 1-4)
 
 ```bash
 cd server
@@ -64,7 +115,7 @@ npm run build
 # App Server otomatis serve static files dari dist/
 ```
 
-### Client Desktop
+### Client Desktop (Tauri v2 — Fase 1-2)
 
 ```bash
 cd client
@@ -73,24 +124,45 @@ npm run tauri dev
 # Aplikasi desktop akan terbuka
 ```
 
+### Siscloud (Fase 3)
+
+```bash
+cd siscloud
+npm install
+npx prisma generate
+npm run dev
+# Server cloud berjalan di http://localhost:3000
+```
+
+Docker:
+```bash
+cd siscloud
+docker build -t siscloud .
+docker run -p 3000:3000 --env-file .env siscloud
+```
+
 ## 🔧 Tech Stack
 
-| Komponen | Teknologi |
-|----------|-----------|
-| App Server | Node.js, Fastify, SQLite, WebSocket |
-| Admin UI | React, Vite, Tailwind CSS |
-| Desktop Client | Tauri v2, Rust, React, rclone |
-| Sync Engine | rclone (40+ backend) |
-| Cloud (Fase 2) | Next.js, PostgreSQL, MinIO/S3 |
+| Komponen | Fase 1-4 | Fase 6-7 (Native Windows) |
+|----------|----------|--------------------------|
+| App Server | Node.js, Fastify, SQLite | C# .NET 8 WPF + bundled Node.js |
+| Admin UI | React, Vite, Tailwind | Embedded WebView2 |
+| Desktop Client | Tauri v2, Rust, React | C# .NET 8 WinUI 3 (100% native) |
+| Sync Engine | rclone (40+ backend) | rclone (via C# Process wrapper) |
+| Cloud | Next.js, PostgreSQL, MinIO/S3 | Same |
+| Installer | Manual / script | WiX Toolset `.msi` / `.exe` |
 
 ## 📋 Fase Pengembangan
 
 | Fase | Status | Deskripsi |
 |------|--------|-----------|
-| **Fase 1** | 🚧 In Progress | Offline Core: App Server + Client + LAN Sync |
-| **Fase 2** | 📅 Planned | Personal Drive Integration (GDrive, OneDrive) |
-| **Fase 3** | 📅 Planned | Cloud Sync: Siscloud + Hybrid Online |
-| **Fase 4** | 📅 Planned | Advanced: Versioning, LDAP, Mobile App |
+| **Fase 1** | ✅ Complete | Offline Core: App Server + Client + LAN Sync |
+| **Fase 2** | ✅ Complete | Personal Drive: Google OAuth, OneDrive OAuth, Conflict Resolution |
+| **Fase 3** | ✅ Complete | Cloud Sync: Siscloud server + Cloud Bridge |
+| **Fase 4** | ✅ Complete | Advanced: Versioning, Policy Engine, LDAP, SaaS |
+| **Fase 5** | 📅 Planned | Mobile Companion App (Android/iOS) |
+| **Fase 6** | 📅 Planned | 🖥️ Desktop App Server (Native Windows `.msi`) |
+| **Fase 7** | 📅 Planned | 💻 Native Desktop Client (WinUI 3, 100% C#) |
 
 ## 📖 Dokumentasi
 
@@ -111,6 +183,8 @@ npm run tauri dev
 - HTTPS/TLS untuk komunikasi client-server
 - Rate limiting & input validation
 - Opsional: AES-256 enkripsi data at-rest
+- Encrypted OAuth token storage
+- API Key auth untuk App Server → Siscloud
 
 ## 📄 Lisensi
 
@@ -118,5 +192,6 @@ Copyright © 2026 Sisbackup. Internal use only.
 
 ---
 
-> **Status**: Fase 1 — MVP Development
+> **Status**: Fase 1-4 Complete | **Fase 5-7 Planned**
 > **Branch**: `dev`
+> **Repo**: https://github.com/blankxwbpzip/sisbackup

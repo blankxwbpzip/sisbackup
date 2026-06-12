@@ -2,11 +2,41 @@
 
 ## Daftar Isi
 
-1. [Instalasi App Server (Windows)](#instalasi-app-server-windows)
-2. [Instalasi App Server (Linux)](#instalasi-app-server-linux)
-3. [Instalasi Client Desktop](#instalasi-client-desktop)
-4. [Verifikasi Instalasi](#verifikasi-instalasi)
-5. [Troubleshooting](#troubleshooting)
+1. [System Requirements](#system-requirements)
+2. [Instalasi App Server (Windows)](#instalasi-app-server-windows)
+3. [Instalasi App Server (Linux)](#instalasi-app-server-linux)
+4. [Instalasi Client Desktop](#instalasi-client-desktop)
+5. [Verifikasi Instalasi](#verifikasi-instalasi)
+6. [Troubleshooting](#troubleshooting)
+
+---
+
+## System Requirements
+
+### Windows (App Server & Client)
+
+| Komponen | Minimum | Recommended |
+|----------|---------|-------------|
+| **OS** | Windows 10 22H2 (Build 19045) | Windows 11 23H2+ |
+| **OS (Server)** | Windows Server 2019/2022 | Windows Server 2022 |
+| **RAM** | 2 GB (Server) / 512 MB (Client) | 4 GB / 1 GB |
+| **Disk** | 500 MB app + storage | 1 GB app + storage |
+| **CPU** | x64, 1.5 GHz dual-core | x64, 2 GHz quad-core |
+
+> ⚠️ **PENTING**: Windows 10 versi di bawah Build 19045 (Windows 10 1507-21H2, Windows 8.1, Windows 7) **tidak didukung**. Pastikan Windows Anda sudah di-update ke versi terbaru.
+
+### Required Dependencies (di-bundle otomatis di installer)
+
+Dependency berikut **sudah termasuk** dalam installer `.msi`/`.exe`. Anda tidak perlu install manual:
+
+| Dependency | Diperlukan Oleh | Di-bundle? |
+|------------|----------------|------------|
+| **Microsoft Visual C++ 2015-2022 Redistributable (x64)** | rclone, native Node.js modules, WinFsp | ✅ Ya (~14 MB) |
+| **.NET 8 Desktop Runtime (x64)** | Fase 6 Server GUI, Fase 7 Client | ✅ Ya (self-contained) |
+| **Node.js 20 LTS** | App Server | ✅ Ya (Fase 6+) |
+| **WinFsp 2.0+** | Fitur mount drive | ✅ Ya (opsional, ~5 MB) |
+
+> Jika Anda melakukan instalasi **manual** (development mode), install dependency di atas secara terpisah sebelum menjalankan aplikasi.
 
 ---
 

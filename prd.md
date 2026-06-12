@@ -15,6 +15,8 @@
 7. [Keamanan](#7-keamanan)
 8. [Non-Functional Requirements](#8-non-functional-requirements)
 9. [Roadmap & Milestones](#9-roadmap--milestones)
+10. [Fase 6: Desktop App Server (Native Windows)](#10-fase-6-desktop-app-server-native-windows)
+11. [Fase 7: Native Desktop Client (Windows)](#11-fase-7-native-desktop-client-windows)
 
 ---
 
@@ -281,6 +283,219 @@ Timeline: 8-12 minggu (berkelanjutan)
 - [x] SaaS subscription model untuk Siscloud
 - [x] LDAP / Active Directory integration
 - [x] Mobile companion app (read-only access)
+
+### Fase 5: Mobile Companion App
+
+**Tujuan**: Aplikasi mobile read-only untuk monitoring backup dan akses file.
+
+```
+Timeline: 8-10 minggu
+```
+
+**Deliverables:**
+- [ ] Android app (Kotlin/Jetpack Compose)
+- [ ] iOS app (Swift/SwiftUI) — opsional
+- [ ] Read-only file browser terhubung ke Siscloud
+- [ ] Push notification untuk status backup penting
+- [ ] Quick share file via link
+- [ ] Biometric login (fingerprint/face)
+
+### Fase 6: Desktop App Server (Native Windows) 🖥️
+
+**Tujuan**: Mengubah App Server menjadi aplikasi desktop Windows native dengan installer `.msi`/`.exe` yang bisa diinstal oleh operator sekolah tanpa perlu pengetahuan command line atau Node.js.
+
+```
+Timeline: 6-8 minggu
+```
+
+**Deliverables:**
+- [ ] Desktop App Server → native Windows GUI application
+- [ ] Bundled Node.js runtime (tidak perlu install Node.js terpisah)
+- [ ] Server management dari system tray (start/stop/restart)
+- [ ] GUI untuk konfigurasi server (storage path, network, port, SSL)
+- [ ] Built-in web admin dashboard (embedded WebView atau launch browser)
+- [ ] Auto-update engine dari file `.msi` lokal atau Siscloud
+- [ ] One-click installer `.msi` (WiX Toolset) — tinggal next-next-finish
+- [ ] Silent installer untuk deployment massal via Group Policy
+- [ ] Integrasi dengan Windows Security Center / Windows Defender Firewall
+- [ ] Service watchdog: auto-restart jika crash, kirim notifikasi ke admin
+
+**Tech Stack:**
+| Aspek | Spesifikasi |
+|-------|-------------|
+| **Bahasa** | C# .NET 8 (Windows Forms / WPF) atau C++ (Win32) |
+| **Runtime** | .NET 8 Desktop Runtime (di-bundle) atau self-contained exe |
+| **Node.js Bundle** | Node.js 20 LTS binary di-bundle dalam installer |
+| **Web Server** | Fastify (Node.js) berjalan sebagai child process |
+| **UI Framework** | WPF (Windows Presentation Foundation) — native look & feel |
+| **System Tray** | Hardcodet NotifyIcon / native Windows Forms tray |
+| **Installer** | WiX Toolset v4 — `.msi` + `.exe` bootstrapper |
+| **Auto-update** | Squirrel.Windows atau custom update checker |
+| **Logging** | Windows Event Log + file log |
+
+**Dependency Runtime (di-bundle dalam installer):**
+- .NET 8 Desktop Runtime (jika tidak self-contained)
+- Node.js 20 LTS (di-bundle otomatis)
+- Microsoft Visual C++ Redistributable 2015-2022 (jika diperlukan oleh native modules)
+
+**System Requirements:**
+- Windows 10 22H2 (Build 19045) atau lebih tinggi
+- Windows 11 (semua build)
+- Windows Server 2019 / 2022
+- RAM: minimal 2 GB (4 GB recommended)
+- Disk: 500 MB untuk aplikasi + ruang untuk data backup
+- .NET 8 Desktop Runtime (otomatis diinstal jika belum ada)
+- Microsoft Visual C++ 2015-2022 Redistributable (x64)
+
+**GUI Features:**
+```
+┌──────────────────────────────────────────────────────┐
+│  📦 Sisbackup Server                          ─ □ ✕  │
+├──────────────────────────────────────────────────────┤
+│  Status Server: 🟢 Running   Uptime: 14d 6h 32m      │
+│  Alamat:       http://192.168.1.100:3001              │
+│  Storage:      D:\BackupSekolah (234 GB / 500 GB)     │
+│                                                      │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐     │
+│  │  45 Guru    │ │  12 Aktif   │ │  Queue: 0   │     │
+│  │  Terdaftar  │ │  Syncing    │ │  Pending    │     │
+│  └─────────────┘ └─────────────┘ └─────────────┘     │
+│                                                      │
+│  [Start] [Stop] [Restart]    [Buka Web Admin]        │
+│                                                      │
+│  ⚙️ Konfigurasi                                     │
+│  ┌────────────────────────────────────────────────┐  │
+│  │ Storage Path:  [D:\BackupSekolah    ] [Browse] │  │
+│  │ Port:          [3001                   ]        │  │
+│  │ Auto-start:    [✓] Start saat Windows boot     │  │
+│  │ Firewall:      [✓] Allow port di firewall      │  │
+│  │ SSL/TLS:       [ ] Enable HTTPS (beta)         │  │
+│  └────────────────────────────────────────────────┘  │
+│                                                      │
+│  📋 Log Aktivitas                                    │
+│  │ 10:30 - ana@sman1 - sync selesai (45 file)       │
+│  │ 10:28 - budi@sman1 - upload 23 file              │
+│  │ 10:25 - Server restart (user request)            │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+**Installer Experience:**
+1. User download `Sisbackup-Server-Setup-2.x.0.msi` (atau `.exe` bootstrapper)
+2. Double-click → Windows SmartScreen → "Run anyway"
+3. Welcome screen → pilih install path (default: `C:\Program Files\Sisbackup Server`)
+4. Centang opsi: "Auto-start server after install" (default: yes)
+5. Install → Progress bar → Selesai
+6. First run wizard:
+   - Pilih storage path (drive/folder untuk backup)
+   - Buat admin account (username + password)
+   - Test koneksi → Selesai
+7. System tray icon muncul → server sudah berjalan
+
+### Fase 7: Native Desktop Client (Windows) 💻
+
+**Tujuan**: Membangun ulang client desktop sebagai aplikasi **100% native Windows** tanpa Tauri/Electron, untuk performa maksimal, RAM minimal, dan user experience yang benar-benar familiar untuk pengguna Windows.
+
+> **Perbedaan dengan Fase 1 Client (Tauri v2)**:
+> - Fase 1: Tauri v2 (Rust backend + React UI via WebView) — bagus, cross-platform
+> - Fase 7: Native WinUI 3 / WPF — zero web tech, full native Windows API, lebih ringan & responsif
+
+```
+Timeline: 10-14 minggu
+```
+
+**Deliverables:**
+- [ ] Native Windows desktop client — tidak ada WebView/Electron dependency
+- [ ] WinUI 3 atau WPF untuk UI native Windows 10/11 (fluent design, acrylic, dll.)
+- [ ] Integrasi penuh dengan Windows Shell (context menu, file explorer overlay icons)
+- [ ] System tray dengan status sync real-time & quick actions
+- [ ] Native file/folder picker (Windows IFileDialog)
+- [ ] Background sync service (Windows Background Task API)
+- [ ] Toast notifications via Windows Action Center
+- [ ] Auto-start via Windows Startup atau Task Scheduler
+- [ ] One-click installer `.msi` — next-next-finish
+- [ ] Silent installer untuk deployment massal lewat Group Policy / Intune
+- [ ] rclone binary di-bundle + auto-update
+- [ ] Offline mode: sync ke server lokal tetap jalan tanpa internet
+- [ ] Drive mounting via WinFsp (opsional: mount remote sebagai drive letter)
+
+**Tech Stack:**
+| Aspek | Spesifikasi |
+|-------|-------------|
+| **Bahasa** | C# .NET 8 |
+| **UI Framework** | WinUI 3 (Windows App SDK) — native Win 10/11 |
+| **Backup Engine** | C# wrapper untuk rclone (Process invocation + progress parsing) |
+| **Background Service** | Windows Background Task API |
+| **System Tray** | WinUI 3 + P/Invoke `Shell_NotifyIcon` |
+| **Notifications** | Windows App SDK `AppNotificationManager` |
+| **File Watching** | `System.IO.FileSystemWatcher` + Windows Change Journal |
+| **Installer** | WiX Toolset v4 — `.msi` + `.exe` bootstrapper |
+| **Auto-Update** | Custom update checker → download `.msi` → auto-install |
+| **Konfigurasi** | Registry (`HKCU\Software\Sisbackup\Client`) + encrypted config file |
+| **Login** | Windows Credential Manager untuk menyimpan token |
+
+**System Requirements:**
+- **OS**: Windows 10 22H2 (Build 19045) atau lebih tinggi
+- **Windows 11**: semua build didukung penuh
+- **RAM**: minimal 512 MB (idle), 1 GB saat sync
+- **Disk**: 150 MB untuk aplikasi + rclone binary
+- **Microsoft Visual C++ 2015-2022 Redistributable (x64)** — di-bundle di installer
+- **.NET 8 Desktop Runtime** — di-bundle di installer (self-contained) atau auto-download
+- **WinFsp** (opsional) — untuk fitur mount drive
+
+**Dependency yang di-bundle dalam installer `.msi`:**
+| Dependency | Size | Keterangan |
+|------------|------|------------|
+| .NET 8 Runtime | ~55 MB | Self-contained deployment (opsional) |
+| VC++ Redist 2015-2022 | ~14 MB | Diperlukan oleh rclone & WinFsp |
+| rclone.exe | ~40 MB | Core sync engine |
+| WinFsp | ~5 MB | Opsional — untuk drive mounting |
+
+**GUI Features (WinUI 3 — Fluent Design):**
+```
+┌──────────────────────────────────────────────────────────┐
+│  📦 Sisbackup                                     ─ □ ✕  │
+├──────────────────────────────────────────────────────────┤
+│  👤 Ana Sari (ana@sman1.sch.id)                          │
+│                                                          │
+│  ┌──────────────────────────────────────────────────┐    │
+│  │ 📊 Status Backup                   🔄 Sync Now   │    │
+│  │                                                  │    │
+│  │ Server Sekolah:  ████████░░  2.3/5 GB (46%)     │    │
+│  │ Google Drive:    ██░░░░░░░░  1.1/15 GB (7%)     │    │
+│  │                                                  │    │
+│  │ Sync Terakhir: 2 menit lalu  ✅ Semua berhasil   │    │
+│  └──────────────────────────────────────────────────┘    │
+│                                                          │
+│  📁 Folder yang Dibackup                                 │
+│  ┌──────────────────────────────────────────────────┐    │
+│  │ 📂 D:\Data Guru        ✅ Synced   [⏸] [🗑]     │    │
+│  │ 📂 D:\RPP 2026         🔄 45%     [⏸] [🗑]     │    │
+│  │ 📂 D:\Nilai Siswa      ⏸ Paused  [▶] [🗑]     │    │
+│  │                                    [+ Tambah]    │    │
+│  └──────────────────────────────────────────────────┘    │
+│                                                          │
+│  ☁️ Tujuan Backup                                        │
+│  ┌──────────────────────────────────────────────────┐    │
+│  │ 🏫 Server Sekolah    🟢 Aktif     [Nonaktifkan]  │    │
+│  │ 📗 Google Drive      🟢 Aktif     [Nonaktifkan]  │    │
+│  │ 🔵 OneDrive          ⚪ Tidak aktif [Aktifkan]   │    │
+│  │                                    [+ Tambah]    │    │
+│  └──────────────────────────────────────────────────┘    │
+│                                                          │
+│  [⚙️ Settings]  [📋 Log]  [❓ Help]  [🔒 Lock]          │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Native Windows Integration:**
+- **Context Menu**: Klik kanan folder di Explorer → "Backup ke Sisbackup" / "Sync sekarang"
+- **File Explorer Overlay**: Icon overlay pada folder yang sedang di-backup (✅ hijau / 🔄 biru / ❌ merah)
+- **Share Target**: Share file langsung ke Sisbackup dari aplikasi apapun via Windows Share charm
+- **Jump List**: Quick access ke folder yang sering di-backup, sync now, pause all
+- **Action Center**: Notifikasi terintegrasi dengan Windows Action Center
+- **Lock Screen**: Status backup muncul di lock screen (Windows 10/11)
+
+
 
 ---
 
@@ -686,7 +901,8 @@ CREATE TABLE sync_journal (
 
 | Komponen | Support |
 |----------|---------|
-| **Client OS** | Windows 10 22H2+, Windows 11 |
+| **Client OS (Fase 1-4)** | Windows 10 22H2+, Windows 11 |
+| **Client OS (Fase 7 Native)** | Windows 10 22H2+ (Build 19045), Windows 11 (semua build) |
 | **App Server OS (Lokal)** | **Windows**: Windows Server 2019/2022, Windows 10 22H2+, Windows 11 |
 | | **Linux**: Ubuntu Server 22.04/24.04 LTS, Debian 12+ |
 | **Siscloud OS (Production)** | **Linux only**: Ubuntu Server 24.04 LTS (recommended), Debian 12+, Rocky Linux 9+ |
@@ -694,13 +910,29 @@ CREATE TABLE sync_journal (
 | **Network** | IPv4 LAN, WiFi, Ethernet |
 | **Storage Backend (rclone)** | Local, SFTP, WebDAV, Google Drive, OneDrive, S3, +36 lainnya |
 
-### 8.5 Matriks Dukungan OS
+### 8.5 Minimum System Requirements (Windows)
+
+| Komponen | Minimum | Recommended |
+|----------|---------|-------------|
+| **OS** | Windows 10 22H2 (Build 19045) | Windows 11 23H2+ |
+| **RAM (App Server)** | 2 GB | 4 GB+ |
+| **RAM (Client)** | 512 MB (idle) | 1 GB+ |
+| **Disk (App Server)** | 500 MB app + storage data | 1 GB app + storage data |
+| **Disk (Client)** | 150 MB app + rclone | 250 MB |
+| **.NET Runtime** | .NET 8 Desktop Runtime (di-bundle) | Self-contained (no external dep) |
+| **VC++ Redist** | Visual C++ 2015-2022 Redist (x64) | Di-bundle di installer |
+| **WinFsp** | Opsional — untuk drive mounting | v2.0+ |
+| **Network** | Ethernet 100 Mbps / WiFi | Gigabit Ethernet |
+
+### 8.6 Matriks Dukungan OS
 
 | Komponen | Windows | Linux | Alasan |
 |----------|---------|-------|--------|
-| **Client Desktop** | ✅ Primary | 🔄 Secondary (future) | Mayoritas guru pakai Windows |
-| **App Server (lokal)** | ✅ Primary | ✅ Primary | Dual first-class; pilihan sesuai kemampuan operator |
-| **Siscloud (cloud)** | ❌ Tidak didukung | ✅ Exclusive | Production server → Linux lebih stabil, aman, hemat biaya |
+| **Client Desktop (Fase 1)** | ✅ Tauri v2 | 🔄 Future | Mayoritas guru pakai Windows |
+| **Client Desktop (Fase 7)** | ✅ WinUI 3 Native | ❌ | Native Windows-only untuk UX maksimal |
+| **App Server (lokal)** | ✅ Primary | ✅ Primary | Dual first-class |
+| **Desktop App Server (Fase 6)** | ✅ WPF/.NET 8 | ❌ | Khusus Windows untuk kemudahan operator |
+| **Siscloud (cloud)** | ❌ | ✅ Exclusive | Production server → Linux |
 | **Web Admin UI** | ✅ Browser | ✅ Browser | Cross-platform via browser |
 
 ---
@@ -708,44 +940,57 @@ CREATE TABLE sync_journal (
 ## 9. Roadmap & Milestones
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          ROADMAP SISBACKUP                          │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  Q3 2026                    Q4 2026                    Q1 2027      │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐      │
-│  │ FASE 1: OFFLINE  │  │ FASE 2: PERSONAL │  │ FASE 3: HYBRID  │      │
-│  │      CORE        │  │     DRIVE        │  │     ONLINE       │      │
-│  ├─────────────────┤  ├─────────────────┤  ├─────────────────┤      │
-│  │ M1: App Server  │  │ M5: GDrive OAuth │  │ M8: Siscloud    │      │
-│  │   • API & Auth  │  │   integration    │  │   deployment    │      │
-│  │   • Web Admin   │  │                  │  │   • Linux VPS   │      │
-│  │   • User Mgmt   │  │ M6: OneDrive     │  │   • Multi-tenant│      │
-│  │   • Win & Linux │  │   OAuth integ.   │  │   • Sync engine │      │
-│  │                 │  │                  │  │                 │      │
-│  │ M2: Client App  │  │ M7: Multi-dest   │  │ M9: Web Portal  │      │
-│  │   • Tauri shell │  │   UI & logic     │  │   • File browser│      │
-│  │   • rclone integ│  │                  │  │   • Sharing     │      │
-│  │                 │  │   Conflict       │  │                 │      │
-│  │ M3: Sync Engine │  │   Resolution     │  │ M10: Server→    │      │
-│  │   • LAN sync    │  │   Engine         │  │   Cloud bridge  │      │
-│  │   • Real-time   │  │                  │  │                 │      │
-│  │                 │  │                  │  │                 │      │
-│  │ M4: Installer   │  │                  │  │                 │      │
-│  │   • EXE & DEB   │  │                  │  │                 │      │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘      │
-│                                                                     │
-│  ████████████████████████████████████████████████████████████████   │
-│  Q2 2027                    Q3-Q4 2027                              │
-│  ┌─────────────────┐  ┌─────────────────────┐                       │
-│  │ FASE 4: ADVANCED │  │ BEYOND              │                       │
-│  ├─────────────────┤  ├─────────────────────┤                       │
-│  │ • File versioning│  │ • Mobile app        │                       │
-│  │ • Backup policy  │  │ • AD/LDAP integ.    │                       │
-│  │ • SaaS monetize  │  │ • E2E encryption    │                       │
-│  │ • Central monitor│  │ • AI dedup          │                       │
-│  └─────────────────┘  └─────────────────────┘                       │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              ROADMAP SISBACKUP                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  2026 Q3                     2026 Q4                     2027 Q1            │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐           │
+│  │ FASE 1: OFFLINE   │  │ FASE 2: PERSONAL  │  │ FASE 3: HYBRID   │           │
+│  │       CORE ✅      │  │      DRIVE ✅      │  │      ONLINE ✅    │           │
+│  ├──────────────────┤  ├──────────────────┤  ├──────────────────┤           │
+│  │ M1: App Server   │  │ M5: GDrive OAuth │  │ M8: Siscloud     │           │
+│  │   • API & Auth   │  │   integration    │  │   • Linux VPS    │           │
+│  │   • Web Admin    │  │                  │  │   • Multi-tenant │           │
+│  │   • Win & Linux  │  │ M6: OneDrive     │  │   • Sync engine  │           │
+│  │                  │  │   OAuth integ.   │  │                  │           │
+│  │ M2: Client App   │  │                  │  │ M9: Web Portal   │           │
+│  │   • Tauri v2     │  │ M7: Multi-dest   │  │   • File browser │           │
+│  │   • rclone integ │  │   UI & logic     │  │   • Sharing      │           │
+│  │                  │  │                  │  │                  │           │
+│  │ M3: Sync Engine  │  │   Conflict       │  │ M10: Cloud       │           │
+│  │   • LAN sync     │  │   Resolution     │  │   Bridge sync    │           │
+│  │   • Real-time    │  │   Engine         │  │   engine         │           │
+│  │                  │  │                  │  │                  │           │
+│  │ M4: Installer    │  │                  │  │                  │           │
+│  │   • EXE & DEB    │  │                  │  │                  │           │
+│  └──────────────────┘  └──────────────────┘  └──────────────────┘           │
+│                                                                             │
+│  2027 Q2                     2027 Q3-Q4                2028 Q1-Q2           │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐           │
+│  │ FASE 4: ADVANCED  │  │ FASE 5: MOBILE    │  │ FASE 6: DESKTOP   │           │
+│  │       ✅           │  │                   │  │    APP SERVER 🖥️  │           │
+│  ├──────────────────┤  ├──────────────────┤  ├──────────────────┤           │
+│  │ • File versioning│  │ • Android app     │  │ • Native Windows  │           │
+│  │ • Backup policy  │  │ • iOS app (ops)   │  │   GUI (WPF/C#)    │           │
+│  │ • SaaS monetize  │  │ • Push notif      │  │ • .msi installer  │           │
+│  │ • Central monitor│  │ • Biometric login │  │ • Bundled Node.js │           │
+│  │ • LDAP/AD integ  │  │ • Quick share     │  │ • System tray mgr │           │
+│  └──────────────────┘  └──────────────────┘  └──────────────────┘           │
+│                                                                             │
+│  2028 Q3-Q4                                                        Future  │
+│  ┌──────────────────────┐  ┌──────────────────────┐                          │
+│  │ FASE 7: NATIVE        │  │ BEYOND               │                          │
+│  │   CLIENT (WinUI 3) 💻 │  │                      │                          │
+│  ├──────────────────────┤  ├──────────────────────┤                          │
+│  │ • 100% native C#     │  │ • E2E encryption     │                          │
+│  │ • WinUI 3 Fluent UI  │  │ • AI dedup           │                          │
+│  │ • Shell integration  │  │ • Ransomware detect  │                          │
+│  │ • Context menu ext   │  │ • Blockchain verify  │                          │
+│  │ • File overlay icons │  │ • Multi-school SaaS  │                          │
+│  │ • Win Action Center  │  │ • ISO 27001 cert     │                          │
+│  └──────────────────────┘  └──────────────────────┘                          │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
