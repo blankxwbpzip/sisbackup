@@ -1,7 +1,9 @@
 node_modules/
-dist/
+# dist/  -- allow release files in dist/
 build/
 target/
+# dist scripts are ok, zip files are not
+dist/*.zip
 .env
 *.log
 .DS_Store
