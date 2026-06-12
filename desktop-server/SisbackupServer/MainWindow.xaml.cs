@@ -3,7 +3,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Hardcodet.Wpf.TaskbarNotification;
 using SisbackupServer.Services;
 
 namespace SisbackupServer;
@@ -12,7 +11,7 @@ public partial class MainWindow : Window
 {
     private readonly ServerManager _serverManager;
     private readonly DispatcherTimer _uiTimer;
-    private TaskbarIcon? _trayIcon;
+    private System.Windows.Forms.NotifyIcon? _trayIcon;
 
     public MainWindow()
     {
@@ -24,8 +23,11 @@ public partial class MainWindow : Window
         _serverManager.StatusChanged += OnStatusChanged;
 
         // ─── UI Update Timer ───────────────────────────
-        _uiTimer = new DispatcherTimer(TimeSpan.FromSeconds(3), DispatcherPriority.Normal,
-            (_, _) => UpdateStats());
+        _uiTimer = new DispatcherTimer(
+            TimeSpan.FromSeconds(3),
+            DispatcherPriority.Normal,
+            (s, e) => UpdateStats(),
+            Dispatcher.CurrentDispatcher);
         _uiTimer.Start();
 
         // ─── Load config into UI ────────────────────────
@@ -56,34 +58,40 @@ public partial class MainWindow : Window
 
     private void SetupTrayIcon()
     {
-        _trayIcon = new TaskbarIcon
+        _trayIcon = new System.Windows.Forms.NotifyIcon
         {
-            ToolTipText = "Sisbackup Server",
-            Icon = new System.Drawing.Icon(System.Drawing.SystemIcons.Shield, 32, 32),
+            Text = "Sisbackup Server - Stopped",
+            Visible = true,
         };
 
-        var contextMenu = new System.Windows.Controls.ContextMenu();
-        var showItem = new MenuItem { Header = "Buka Sisbackup Server" };
-        showItem.Click += (_, _) => { Show(); WindowState = WindowState.Normal; Activate(); };
+        // Use default application icon or system icon
+        try
+        {
+            using var stream = System.Reflection.Assembly.GetExecutingAssembly()
+                .GetManifestResourceStream("SisbackupServer.Resources.app.ico");
+            if (stream != null)
+                _trayIcon.Icon = new System.Drawing.Icon(stream);
+        }
+        catch
+        {
+            // Use default icon from system
+        }
 
-        var startItem = new MenuItem { Header = "Start Server" };
-        startItem.Click += async (_, _) => await StartServer();
+        var contextMenu = new System.Windows.Forms.ContextMenuStrip();
+        contextMenu.Items.Add("Buka Sisbackup Server", null, (_, _) =>
+        {
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+        });
+        contextMenu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+        contextMenu.Items.Add("Start Server", null, async (_, _) => await StartServer());
+        contextMenu.Items.Add("Stop Server", null, async (_, _) => await _serverManager.StopAsync());
+        contextMenu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+        contextMenu.Items.Add("Keluar", null, (_, _) => Application.Current.Shutdown());
 
-        var stopItem = new MenuItem { Header = "Stop Server" };
-        stopItem.Click += async (_, _) => await _serverManager.StopAsync();
-
-        var exitItem = new MenuItem { Header = "Keluar" };
-        exitItem.Click += (_, _) => Application.Current.Shutdown();
-
-        contextMenu.Items.Add(showItem);
-        contextMenu.Items.Add(new Separator());
-        contextMenu.Items.Add(startItem);
-        contextMenu.Items.Add(stopItem);
-        contextMenu.Items.Add(new Separator());
-        contextMenu.Items.Add(exitItem);
-
-        _trayIcon.ContextMenu = contextMenu;
-        _trayIcon.TrayLeftMouseDown += (_, _) => { Show(); WindowState = WindowState.Normal; Activate(); };
+        _trayIcon.ContextMenuStrip = contextMenu;
+        _trayIcon.DoubleClick += (_, _) => { Show(); WindowState = WindowState.Normal; Activate(); };
     }
 
     // ─── Server Control ───────────────────────────────────
@@ -106,7 +114,6 @@ public partial class MainWindow : Window
     {
         BtnStart.IsEnabled = false;
 
-        // Apply config from UI
         if (int.TryParse(TxtPort.Text, out int port))
             _serverManager.Port = port;
 
@@ -117,6 +124,7 @@ public partial class MainWindow : Window
         {
             ServerUrlText.Text = $"http://localhost:{_serverManager.Port}";
             LanUrlText.Text = $"LAN: http://{ServerManager.GetLocalIpAddress()}:{_serverManager.Port}";
+            if (_trayIcon != null) _trayIcon.Text = $"Sisbackup Server - Port {_serverManager.Port}";
         }
         else
         {
@@ -133,8 +141,6 @@ public partial class MainWindow : Window
         {
             var timestamp = DateTime.Now.ToString("HH:mm:ss");
             LstLogs.Items.Insert(0, $"[{timestamp}] {message}");
-
-            // Keep last 500 lines
             while (LstLogs.Items.Count > 500)
                 LstLogs.Items.RemoveAt(LstLogs.Items.Count - 1);
         });
@@ -156,6 +162,7 @@ public partial class MainWindow : Window
             StatusDot.Fill = new SolidColorBrush((Color)FindResource("SuccessColor"));
             StatusText.Text = "Server Running";
             TxtFooter.Text = $"Sisbackup Server v2.6.0 — Running on port {_serverManager.Port}";
+            if (_trayIcon != null) _trayIcon.Text = $"Sisbackup Server - Running :{_serverManager.Port}";
         }
         else
         {
@@ -163,26 +170,17 @@ public partial class MainWindow : Window
             StatusText.Text = "Server Stopped";
             UptimeText.Text = "";
             TxtFooter.Text = "Sisbackup Server v2.6.0 — Stopped";
+            if (_trayIcon != null) _trayIcon.Text = "Sisbackup Server - Stopped";
         }
     }
 
     private void UpdateStats()
     {
         if (_serverManager.IsRunning)
-        {
             UptimeText.Text = $"Uptime: {_serverManager.Uptime:dd\\d\\ hh\\h\\ mm\\m}";
-        }
 
         var (totalGb, freeGb) = _serverManager.GetDiskInfo();
-        if (totalGb > 0)
-        {
-            var usedGb = totalGb - freeGb;
-            StatDisk.Text = $"{usedGb}/{totalGb} GB";
-        }
-        else
-        {
-            StatDisk.Text = "N/A";
-        }
+        StatDisk.Text = totalGb > 0 ? $"{totalGb - freeGb}/{totalGb} GB" : "N/A";
         StatUsers.Text = "—";
         StatActiveSyncs.Text = "—";
         StatQueue.Text = "—";
@@ -200,9 +198,7 @@ public partial class MainWindow : Window
         };
 
         if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        {
             TxtStoragePath.Text = dialog.SelectedPath;
-        }
     }
 
     private void BtnSaveConfig_Click(object sender, RoutedEventArgs e)
@@ -212,7 +208,6 @@ public partial class MainWindow : Window
             _serverManager.Port = port;
         _serverManager.AutoStart = ChkAutoStart.IsChecked == true;
         _serverManager.FirewallEnabled = ChkFirewall.IsChecked == true;
-
         _serverManager.SaveConfig();
 
         MessageBox.Show("Konfigurasi disimpan.\nRestart server untuk menerapkan perubahan port/storage.",
@@ -233,14 +228,14 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
-        // Minimize to tray instead of closing
         if (_trayIcon != null)
         {
             e.Cancel = true;
             Hide();
-            _trayIcon.ShowBalloonTip("Sisbackup Server",
-                "Server tetap berjalan di background. Klik ikon tray untuk membuka.",
-                BalloonIcon.Info);
+            _trayIcon.ShowBalloonTip(
+                3000, "Sisbackup Server",
+                "Server tetap berjalan di background.\nKlik ikon tray untuk membuka.",
+                System.Windows.Forms.ToolTipIcon.Info);
         }
     }
 

@@ -11,8 +11,8 @@ public class ServerManager
     private readonly NodeProcessService _nodeService;
     private readonly FirewallService _firewallService;
 
-    public int Port { get; private set; } = 3001;
-    public string StoragePath { get; private set; } = @"D:\BackupSekolah";
+    public int Port { get; set; } = 3001;
+    public string StoragePath { get; set; } = @"D:\BackupSekolah";
     public bool AutoStart { get; set; } = true;
     public bool FirewallEnabled { get; set; } = true;
     public DateTime StartedAt { get; private set; }

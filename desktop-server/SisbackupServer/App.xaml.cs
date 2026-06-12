@@ -5,7 +5,6 @@ namespace SisbackupServer;
 
 public partial class App : Application
 {
-    private NotifyIcon? _trayIcon;
     private Mutex? _mutex;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -23,17 +22,16 @@ public partial class App : Application
         }
 
         // Global exception handler
-        DispatcherUnhandledException += (s, e) =>
+        DispatcherUnhandledException += (s, ex) =>
         {
-            MessageBox.Show($"Terjadi error: {e.Exception.Message}\n\nServer akan tetap berjalan.",
+            MessageBox.Show($"Terjadi error: {ex.Exception.Message}\n\nServer akan tetap berjalan.",
                 "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            e.Handled = true;
+            ex.Handled = true;
         };
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
-        _trayIcon?.Dispose();
         _mutex?.ReleaseMutex();
         base.OnExit(e);
     }

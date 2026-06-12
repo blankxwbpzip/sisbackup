@@ -7,6 +7,10 @@ target/
 .DS_Store
 Thumbs.db
 
+# .NET build artifacts
+**/bin/
+**/obj/
+
 # Tauri
 src-tauri/target/
 
