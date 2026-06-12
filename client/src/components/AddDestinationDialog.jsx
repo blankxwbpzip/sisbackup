@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { getServerUrl } from '../lib/api';
+import { getServerUrl, getOAuthUrl, oauthCallback } from '../lib/api';
+import OAuthConnect from './OAuthConnect';
 
 export default function AddDestinationDialog({ onAdd, onClose }) {
   const [destType, setDestType] = useState('local_server');
   const [destLabel, setDestLabel] = useState('Server Sekolah');
   const [config, setConfig] = useState({});
+  const [oauthConfig, setOauthConfig] = useState(null);
 
   const serverUrl = getServerUrl() || 'http://192.168.1.100:3001';
 
@@ -13,9 +15,18 @@ export default function AddDestinationDialog({ onAdd, onClose }) {
     onAdd({
       destType,
       destLabel,
-      destConfig: config,
+      destConfig: oauthConfig || config,
       priority: 1,
     });
+  }
+
+  function handleOAuthConnected({ provider, email, rcloneConfig }) {
+    setOauthConfig(rcloneConfig);
+    setDestLabel(provider === 'google' ? `Google Drive - ${email}` : `OneDrive - ${email}`);
+  }
+
+  function handleOAuthDisconnected() {
+    setOauthConfig(null);
   }
 
   return (
@@ -28,6 +39,7 @@ export default function AddDestinationDialog({ onAdd, onClose }) {
             <select value={destType}
               onChange={e => {
                 setDestType(e.target.value);
+                setOauthConfig(null);
                 setDestLabel(
                   e.target.value === 'local_server' ? 'Server Sekolah' :
                   e.target.value === 'google_drive' ? 'Google Drive' :
@@ -37,8 +49,8 @@ export default function AddDestinationDialog({ onAdd, onClose }) {
               }}
               className="w-full px-3 py-2 border rounded-lg text-sm">
               <option value="local_server">🏫 Server Sekolah (LAN)</option>
-              <option value="google_drive">📗 Google Drive</option>
-              <option value="onedrive">🔵 Microsoft OneDrive</option>
+              <option value="google_drive">📗 Google Drive (OAuth)</option>
+              <option value="onedrive">🔵 Microsoft OneDrive (OAuth)</option>
               <option value="local">💾 Folder Lokal / External</option>
             </select>
           </div>
@@ -76,15 +88,19 @@ export default function AddDestinationDialog({ onAdd, onClose }) {
             </div>
           )}
 
+          {/* Google Drive OAuth */}
           {destType === 'google_drive' && (
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-              <p className="text-xs text-gray-500 mb-2">
-                Klik hubungkan untuk login ke Google dan beri izin akses.
-              </p>
-              <button type="button"
-                className="w-full border border-gray-300 py-2 rounded-lg text-sm hover:bg-white">
-                🔗 Hubungkan Google Drive
-              </button>
+            <div className="space-y-3">
+              <OAuthConnect
+                provider="google"
+                onConnected={handleOAuthConnected}
+                onDisconnect={handleOAuthDisconnected}
+              />
+              {oauthConfig && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-xs text-green-700">
+                  ✅ Google Drive terhubung dan siap digunakan
+                </div>
+              )}
               <div>
                 <label className="block text-xs text-gray-600 mb-0.5">Folder (opsional)</label>
                 <input type="text" value={config.folder || 'Sisbackup'}
@@ -94,15 +110,19 @@ export default function AddDestinationDialog({ onAdd, onClose }) {
             </div>
           )}
 
+          {/* OneDrive OAuth */}
           {destType === 'onedrive' && (
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-              <p className="text-xs text-gray-500 mb-2">
-                Klik hubungkan untuk login ke Microsoft dan beri izin akses.
-              </p>
-              <button type="button"
-                className="w-full border border-gray-300 py-2 rounded-lg text-sm hover:bg-white">
-                🔗 Hubungkan OneDrive
-              </button>
+            <div className="space-y-3">
+              <OAuthConnect
+                provider="microsoft"
+                onConnected={handleOAuthConnected}
+                onDisconnect={handleOAuthDisconnected}
+              />
+              {oauthConfig && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-xs text-green-700">
+                  ✅ OneDrive terhubung dan siap digunakan
+                </div>
+              )}
               <div>
                 <label className="block text-xs text-gray-600 mb-0.5">Folder (opsional)</label>
                 <input type="text" value={config.folder || 'Sisbackup'}

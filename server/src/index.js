@@ -11,6 +11,8 @@ const userRoutes = require('./routes/users');
 const syncRoutes = require('./routes/sync');
 const configRoutes = require('./routes/config');
 const statsRoutes = require('./routes/stats');
+const oauthRoutes = require('./routes/oauth');
+const rcloneConfigRoutes = require('./routes/rclone');
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -47,6 +49,8 @@ async function buildServer() {
   await fastify.register(syncRoutes);
   await fastify.register(configRoutes);
   await fastify.register(statsRoutes);
+  await fastify.register(oauthRoutes);
+  await fastify.register(rcloneConfigRoutes);
 
   // ─── Health check ─────────────────────────────────────
   fastify.get('/api/health', async () => {

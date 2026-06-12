@@ -150,3 +150,28 @@ export async function getSyncLogs(limit = 50) {
 export async function getMyStats() {
   return request('/api/stats/my');
 }
+
+// ─── OAuth (Fase 2) ───────────────────────────────────────
+
+export async function getOAuthConnections() {
+  return request('/api/oauth/connections');
+}
+
+export async function getOAuthUrl(provider) {
+  return request(`/api/oauth/${provider}/url`);
+}
+
+export async function oauthCallback(provider, code) {
+  return request(`/api/oauth/${provider}/callback`, {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function disconnectOAuth(provider) {
+  return request(`/api/oauth/${provider}`, { method: 'DELETE' });
+}
+
+export async function refreshOAuthToken(provider) {
+  return request(`/api/oauth/${provider}/refresh`, { method: 'POST' });
+}
