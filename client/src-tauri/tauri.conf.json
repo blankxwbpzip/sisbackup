@@ -1,0 +1,70 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicknisi/tauri-config-schema/main/schema.json",
+  "productName": "Sisbackup Client",
+  "version": "2.0.0",
+  "identifier": "com.sisbackup.client",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "title": "Sisbackup",
+    "windows": [
+      {
+        "title": "Sisbackup - Backup Sekolah",
+        "width": 900,
+        "height": 650,
+        "minWidth": 750,
+        "minHeight": 500,
+        "resizable": true,
+        "decorations": true,
+        "center": true
+      }
+    ],
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true,
+      "tooltip": "Sisbackup Backup",
+      "menuOnLeftClick": false
+    },
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true,
+      "scope": [
+        {
+          "name": "rclone",
+          "cmd": "rclone",
+          "args": true
+        }
+      ]
+    },
+    "notification": {
+      "all": true
+    },
+    "autostart": {
+      "all": true
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  }
+}

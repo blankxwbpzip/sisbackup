@@ -1,0 +1,33 @@
+node_modules/
+dist/
+build/
+target/
+.env
+*.log
+.DS_Store
+Thumbs.db
+
+# Tauri
+src-tauri/target/
+
+# IDE
+.vscode/
+.idea/
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# OS files
+*.exe
+*.msi
+*.deb
+*.AppImage
+
+# rclone binaries
+rclone/
+
+# Backup data (local testing)
+data/
+backup-test/
